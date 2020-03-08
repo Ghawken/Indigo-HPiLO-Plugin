@@ -195,29 +195,46 @@ class Plugin(indigo.PluginBase):
                 try:
                     for item in data['temperature']:
                         #self.logger.info(unicode(item))
-                        nameofstate = ("Temp_"+data['temperature'][item]['label']).replace(" ","_").replace("-","_")
-                        dataofstate = data['temperature'][item]['currentreading'][0]
-                        stateListappend =    {'key': nameofstate, 'value': dataofstate}
-                        stateList.append(stateListappend)
-                        nameofstate = ("Temp_"+data['temperature'][item]['label']+"_Status").replace(" ","_").replace("-","_")
-                        dataofstate = data['temperature'][item]['status']
-                        stateListappend = {'key': nameofstate, 'value': dataofstate}
-                        stateList.append(stateListappend)
+                        try:
+                            nameofstate =""
+                            nameofstate = ("Temp_"+data['temperature'][item]['label']).replace(" ","_").replace("-","_")
+                            dataofstate = data['temperature'][item]['currentreading'][0]
+                            stateListappend =    {'key': nameofstate, 'value': dataofstate}
+                            if nameofstate !="":
+                                stateList.append(stateListappend)
+                            nameofstate = ("Temp_"+data['temperature'][item]['label']+"_Status").replace(" ","_").replace("-","_")
+                            dataofstate = data['temperature'][item]['status']
+                            stateListappend = {'key': nameofstate, 'value': dataofstate}
+                            if nameofstate !="":
+                                stateList.append(stateListappend)
+                        except:
+                            self.logger.debug("Exception in Temp Skipped")
+                            nameofstate =""
+                            pass
+
+
                 except Exception as e:
                     self.logger.debug("Exception in Data Temperature:"+unicode(e.Message))
 
                 try:
                     for item in data['fans']:
                         #self.logger.info(unicode(item))
-                        nameofstate = (data['fans'][item]['label']+"_Speed").replace(" ","_")
-                        dataofstate = data['fans'][item]['speed'][0]
-                        stateListappend =    {'key': nameofstate, 'value': dataofstate}
-                        stateList.append(stateListappend)
+                        try:
+                            nameofstate = ""
+                            nameofstate = (data['fans'][item]['label']+"_Speed").replace(" ","_")
+                            dataofstate = data['fans'][item]['speed'][0]
+                            stateListappend =    {'key': nameofstate, 'value': dataofstate}
+                            if nameofstate !="":
+                                stateList.append(stateListappend)
 
-                        nameofstate = (data['fans'][item]['label']+"_Status").replace(" ","_")
-                        dataofstate = data['fans'][item]['speed'][0]
-                        stateListappend = {'key': nameofstate, 'value': dataofstate}
-                        stateList.append(stateListappend)
+                            nameofstate = (data['fans'][item]['label']+"_Status").replace(" ","_")
+                            dataofstate = data['fans'][item]['speed'][0]
+                            stateListappend = {'key': nameofstate, 'value': dataofstate}
+                            if nameofstate != "":
+                                stateList.append(stateListappend)
+                        except:
+                            self.logger.debug("Exception in fans")
+                            nameofstate =""
 
                 except Exception as e:
                     self.logger.debug("Exception in Data Fans:"+unicode(e.Message))
@@ -225,10 +242,16 @@ class Plugin(indigo.PluginBase):
                 try:
                     for item in data['health_at_a_glance']:
                         # self.logger.info(unicode(item))
-                        nameofstate =  "Health_Summary_"+item+"_Status"
-                        dataofstate = data['health_at_a_glance'][item]['status']
-                        stateListappend = {'key': nameofstate, 'value': dataofstate}
-                        stateList.append(stateListappend)
+                        try:
+                            nameofstate =""
+                            nameofstate =  "Health_Summary_"+item+"_Status"
+                            dataofstate = data['health_at_a_glance'][item]['status']
+                            stateListappend = {'key': nameofstate, 'value': dataofstate}
+                            if nameofstate != "":
+                                stateList.append(stateListappend)
+                        except:
+                            self.logger.debug("Exception Health at glance")
+                            nameofstate = ""
 
                 except Exception as e:
                     self.logger.debug("Exception in Health at a Glance:" + unicode(e.Message))
@@ -440,7 +463,6 @@ class Plugin(indigo.PluginBase):
                 licensekey = valuesDict.props.get('licensekey','325WC-J9QJ7-495NG-CP7WZ-7GJMM')
                 ilo.activate_license(key=str(licensekey))
                 self.logger.info(u"Installed Advanced License Key: "+unicode(licensekey))
-
 
         except hpilo.IloCommunicationError:
             self.logger.info("Error communicating with HP iLO")
