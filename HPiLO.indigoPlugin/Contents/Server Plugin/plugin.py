@@ -256,7 +256,7 @@ class Plugin(indigo.PluginBase):
                 except Exception as e:
                     self.logger.debug("Exception in Health at a Glance:" + unicode(e.Message))
 
-                self.logger.info(unicode(stateList))
+                self.logger.debug(unicode(stateList))
                 dev.updateStatesOnServer(stateList)
 
             elif type=="fw_version":
@@ -270,7 +270,7 @@ class Plugin(indigo.PluginBase):
                 dataofstate = data['license_type']
                 stateListappend = {'key': nameofstate, 'value': dataofstate}
                 stateList.append(stateListappend)
-                self.logger.info(unicode(stateList))
+                self.logger.debug(unicode(stateList))
                 dev.updateStatesOnServer(stateList)
 
             elif type=="poweron":
