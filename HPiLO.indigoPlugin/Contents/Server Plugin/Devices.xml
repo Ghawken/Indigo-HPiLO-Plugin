@@ -1,0 +1,427 @@
+<?xml version="1.0"?>
+<Devices>
+<Device type="relay" id="MainILO3" >
+     <Name>HP Server iLO</Name>
+	<ConfigUI>
+  <Field id="ipaddress"
+				   type="textfield"
+				   tooltip="Enter ipaddress or localhost checkbox"
+				   default=""                   >
+
+				<Label>Enter your Ip Address of iLO Device:</Label>
+			</Field>
+                       <Field id="username"
+				   type="textfield"
+				   tooltip="Enter Username"
+				   default=""                   >
+
+				<Label>Enter your Username:</Label>
+			</Field>
+		<Field id="password"
+				   type="textfield"
+				   tooltip="Enter password"
+				   default=""                   >
+
+				<Label>Enter your Password:</Label>
+			</Field>
+		</ConfigUI>
+     <States>
+		     <State id="deviceIsOnline">
+                <ValueType>Boolean</ValueType>
+                <TriggerLabel>Device Online?</TriggerLabel>
+                <ControlPageLabel>Device Online?</ControlPageLabel>
+            </State>
+
+            <State id="deviceLastUpdated">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Device Last Updated</TriggerLabel>
+                <ControlPageLabel>Device Last Updated</ControlPageLabel>
+            </State>
+
+            <State id="deviceTimestamp">
+                <ValueType>Integer</ValueType>
+                <TriggerLabel>Device Timestamp</TriggerLabel>
+                <ControlPageLabel>Device Timestamp</ControlPageLabel>
+            </State>
+
+   <State id="Fan_3B_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_3B_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_3B_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_3B_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_3B_Status</TriggerLabel>
+                <ControlPageLabel>Fan_3B_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_3A_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_3A_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_3A_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_3A_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_3A_Status</TriggerLabel>
+                <ControlPageLabel>Fan_3A_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_4B_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_4B_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_4B_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_4B_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_4B_Status</TriggerLabel>
+                <ControlPageLabel>Fan_4B_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_4A_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_4A_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_4A_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_4A_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_4A_Status</TriggerLabel>
+                <ControlPageLabel>Fan_4A_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_5A_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_5A_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_5A_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_5A_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_5A_Status</TriggerLabel>
+                <ControlPageLabel>Fan_5A_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_5B_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_5B_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_5B_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_5B_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_5B_Status</TriggerLabel>
+                <ControlPageLabel>Fan_5B_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_6A_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_6A_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_6A_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_6A_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_6A_Status</TriggerLabel>
+                <ControlPageLabel>Fan_6A_Status</ControlPageLabel>
+            </State>
+
+   <State id="Fan_6B_Speed">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_6B_Speed</TriggerLabel>
+                <ControlPageLabel>Fan_6B_Speed</ControlPageLabel>
+            </State>
+
+   <State id="Fan_6B_Status">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Fan_6B_Status</TriggerLabel>
+                <ControlPageLabel>Fan_6B_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_06_HD_Max">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_06_HD_Max</TriggerLabel>
+                <ControlPageLabel>Temp_06_HD_Max</ControlPageLabel>
+            </State>
+
+   <State id="Temp_06_HD_Max_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_06_HD_Max_Status</TriggerLabel>
+                <ControlPageLabel>Temp_06_HD_Max_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_14_PCI_4_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_14_PCI_4_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_14_PCI_4_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_14_PCI_4_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_14_PCI_4_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_14_PCI_4_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_05_P1_Mem_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_05_P1_Mem_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_05_P1_Mem_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_05_P1_Mem_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_05_P1_Mem_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_05_P1_Mem_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_04_P1_Mem_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_04_P1_Mem_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_04_P1_Mem_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_04_P1_Mem_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_04_P1_Mem_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_04_P1_Mem_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_01_Inlet_Ambient">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_01_Inlet_Ambient</TriggerLabel>
+                <ControlPageLabel>Temp_01_Inlet_Ambient</ControlPageLabel>
+            </State>
+
+   <State id="Temp_01_Inlet_Ambient_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_01_Inlet_Ambient_Status</TriggerLabel>
+                <ControlPageLabel>Temp_01_Inlet_Ambient_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_02_CPU">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_02_CPU</TriggerLabel>
+                <ControlPageLabel>Temp_02_CPU</ControlPageLabel>
+            </State>
+
+   <State id="Temp_02_CPU_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_02_CPU_Status</TriggerLabel>
+                <ControlPageLabel>Temp_02_CPU_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_16_System_Board">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_16_System_Board</TriggerLabel>
+                <ControlPageLabel>Temp_16_System_Board</ControlPageLabel>
+            </State>
+
+   <State id="Temp_16_System_Board_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_16_System_Board_Status</TriggerLabel>
+                <ControlPageLabel>Temp_16_System_Board_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_03_P1_DIMM_1_4">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_03_P1_DIMM_1_4</TriggerLabel>
+                <ControlPageLabel>Temp_03_P1_DIMM_1_4</ControlPageLabel>
+            </State>
+
+   <State id="Temp_03_P1_DIMM_1_4_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_03_P1_DIMM_1_4_Status</TriggerLabel>
+                <ControlPageLabel>Temp_03_P1_DIMM_1_4_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_13_PCI_3_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_13_PCI_3_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_13_PCI_3_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_13_PCI_3_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_13_PCI_3_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_13_PCI_3_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_07_VR_P1">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_07_VR_P1</TriggerLabel>
+                <ControlPageLabel>Temp_07_VR_P1</ControlPageLabel>
+            </State>
+
+   <State id="Temp_07_VR_P1_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_07_VR_P1_Status</TriggerLabel>
+                <ControlPageLabel>Temp_07_VR_P1_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_15_System_Board">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_15_System_Board</TriggerLabel>
+                <ControlPageLabel>Temp_15_System_Board</ControlPageLabel>
+            </State>
+
+   <State id="Temp_15_System_Board_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_15_System_Board_Status</TriggerLabel>
+                <ControlPageLabel>Temp_15_System_Board_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_10_VR_P1Mem_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_10_VR_P1Mem_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_10_VR_P1Mem_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_10_VR_P1Mem_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_10_VR_P1Mem_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_10_VR_P1Mem_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_12_PCI_2_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_12_PCI_2_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_12_PCI_2_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_12_PCI_2_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_12_PCI_2_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_12_PCI_2_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_08_VR_P1">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_08_VR_P1</TriggerLabel>
+                <ControlPageLabel>Temp_08_VR_P1</ControlPageLabel>
+            </State>
+
+   <State id="Temp_08_VR_P1_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_08_VR_P1_Status</TriggerLabel>
+                <ControlPageLabel>Temp_08_VR_P1_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_09_VR_P1_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_09_VR_P1_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_09_VR_P1_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_09_VR_P1_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_09_VR_P1_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_09_VR_P1_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Temp_11_PCI_1_Zone">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Temp_11_PCI_1_Zone</TriggerLabel>
+                <ControlPageLabel>Temp_11_PCI_1_Zone</ControlPageLabel>
+            </State>
+
+   <State id="Temp_11_PCI_1_Zone_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Temp_11_PCI_1_Zone_Status</TriggerLabel>
+                <ControlPageLabel>Temp_11_PCI_1_Zone_Status</ControlPageLabel>
+            </State>
+
+   <State id="Health_Summary_power_supplies_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Health_Summary_power_supplies_Status</TriggerLabel>
+                <ControlPageLabel>Health_Summary_power_supplies_Status</ControlPageLabel>
+            </State>
+
+   <State id="Health_Summary_fans_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Health_Summary_fans_Status</TriggerLabel>
+                <ControlPageLabel>Health_Summary_fans_Status</ControlPageLabel>
+            </State>
+
+   <State id="Health_Summary_temperature_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Health_Summary_temperature_Status</TriggerLabel>
+                <ControlPageLabel>Health_Summary_temperature_Status</ControlPageLabel>
+            </State>
+
+   <State id="Host_BIOS_Date">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_BIOS_Date</TriggerLabel>
+                <ControlPageLabel>Host_BIOS_Date</ControlPageLabel>
+            </State>
+
+   <State id="Host_UUID">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_UUID</TriggerLabel>
+                <ControlPageLabel>Host_UUID</ControlPageLabel>
+            </State>
+
+   <State id="Host_ProductName">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_ProductName</TriggerLabel>
+                <ControlPageLabel>Host_ProductName</ControlPageLabel>
+            </State>
+
+   <State id="Host_SerialNumber">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_SerialNumber</TriggerLabel>
+                <ControlPageLabel>Host_SerialNumber</ControlPageLabel>
+            </State>
+
+   <State id="Host_iLO_Firmware_Version">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_iLO_Firmware_Version</TriggerLabel>
+                <ControlPageLabel>Host_iLO_Firmware_Version</ControlPageLabel>
+            </State>
+
+   <State id="Host_iLO_License_Version">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Host_iLO_License_Version</TriggerLabel>
+                <ControlPageLabel>Host_iLO_License_Version</ControlPageLabel>
+            </State>
+
+		    <State id="Host_PowerOnTime_Minutes">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>PowerOn Time of Server in Minutes</TriggerLabel>
+                <ControlPageLabel>PowerOn Time of Server in Minutes</ControlPageLabel>
+            </State>
+		 .   <State id="Host_PowerOnTime_String">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Power on Time as Sentence</TriggerLabel>
+                <ControlPageLabel>Power on Time as Sentence</ControlPageLabel>
+            </State>
+
+		 <State id="Power_Average">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Average Power Readings Watts</TriggerLabel>
+                <ControlPageLabel>Average Power Reading</ControlPageLabel>
+            </State>
+   <State id="Power_Maximum">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Maximum Power Reading Watts</TriggerLabel>
+                <ControlPageLabel>Maximum Power Reading Watts</ControlPageLabel>
+            </State>
+
+		    <State id="Power_Minimum">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Minimum power reading</TriggerLabel>
+                <ControlPageLabel>Minimum power reading</ControlPageLabel>
+            </State>
+		 .   <State id="Power_Present">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Present Power Usage Watts</TriggerLabel>
+                <ControlPageLabel>Present Power Usage Watts</ControlPageLabel>
+            </State>
+
+        </States>
+    <UiDisplayStateId>deviceIsOnline</UiDisplayStateId>
+ </Device>
+
+
+</Devices>
