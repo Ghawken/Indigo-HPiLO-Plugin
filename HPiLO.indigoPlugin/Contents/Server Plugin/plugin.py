@@ -200,12 +200,12 @@ class Plugin(indigo.PluginBase):
                             nameofstate = ("Temp_"+data['temperature'][item]['label']).replace(" ","_").replace("-","_")
                             dataofstate = data['temperature'][item]['currentreading'][0]
                             stateListappend =    {'key': nameofstate, 'value': dataofstate}
-                            if nameofstate !="":
+                            if nameofstate !="" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
                             nameofstate = ("Temp_"+data['temperature'][item]['label']+"_Status").replace(" ","_").replace("-","_")
                             dataofstate = data['temperature'][item]['status']
                             stateListappend = {'key': nameofstate, 'value': dataofstate}
-                            if nameofstate !="":
+                            if nameofstate !="" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
                         except:
                             self.logger.debug("Exception in Temp Skipped")
@@ -224,13 +224,13 @@ class Plugin(indigo.PluginBase):
                             nameofstate = (data['fans'][item]['label']+"_Speed").replace(" ","_")
                             dataofstate = data['fans'][item]['speed'][0]
                             stateListappend =    {'key': nameofstate, 'value': dataofstate}
-                            if nameofstate !="":
+                            if nameofstate !="" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
 
                             nameofstate = (data['fans'][item]['label']+"_Status").replace(" ","_")
                             dataofstate = data['fans'][item]['speed'][0]
                             stateListappend = {'key': nameofstate, 'value': dataofstate}
-                            if nameofstate != "":
+                            if nameofstate != "" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
                         except:
                             self.logger.debug("Exception in fans")
@@ -247,7 +247,7 @@ class Plugin(indigo.PluginBase):
                             nameofstate =  "Health_Summary_"+item+"_Status"
                             dataofstate = data['health_at_a_glance'][item]['status']
                             stateListappend = {'key': nameofstate, 'value': dataofstate}
-                            if nameofstate != "":
+                            if nameofstate != "" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
                         except:
                             self.logger.debug("Exception Health at glance")
@@ -442,7 +442,7 @@ class Plugin(indigo.PluginBase):
             ipaddress = device.pluginProps.get('ipaddress', "")
             username = device.pluginProps.get('username', "")
             password = device.pluginProps.get('password', "")
-            self.logger.debug(u"Connecting to IP " + unicode(ipaddress) + u" with username" + unicode(
+            self.logger.debug(u"Connecting to IP " + unicode(ipaddress) + u" with username:" + unicode(
                 username) + u" and password:" + unicode(password))
             ilo = hpilo.Ilo(ipaddress, login=username, password=password, timeout=10)
             self.sleep(1)

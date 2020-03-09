@@ -1,0 +1,2 @@
+Add checks for states existing in device.
+(avoids state not found error, if different serverrs have different results...)
