@@ -1,2 +1,5 @@
 Add checks for states existing in device.
 (avoids state not found error, if different serverrs have different results...)
+Adds checks for additional states not reporting by my server - so can easily be added later by log review
+Fix for Power_Status being checked twice
+Add additional Health_Status states that Advanced ILO3 license reports

@@ -226,12 +226,18 @@ class Plugin(indigo.PluginBase):
                             stateListappend =    {'key': nameofstate, 'value': dataofstate}
                             if nameofstate !="" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
+                            elif nameofstate != "" and nameofstate not in dev.states:
+                                self.logger.debug(unicode(
+                                    nameofstate) + " NOT found in device states.  Please let Developer know and can add support")
 
                             nameofstate = (data['fans'][item]['label']+"_Status").replace(" ","_")
                             dataofstate = data['fans'][item]['speed'][0]
                             stateListappend = {'key': nameofstate, 'value': dataofstate}
                             if nameofstate != "" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
+                            elif nameofstate != "" and nameofstate not in dev.states:
+                                self.logger.debug(unicode(
+                                    nameofstate) + " NOT found in device states.  Please let Developer know and can add support")
                         except:
                             self.logger.debug("Exception in fans")
                             nameofstate =""
@@ -249,6 +255,8 @@ class Plugin(indigo.PluginBase):
                             stateListappend = {'key': nameofstate, 'value': dataofstate}
                             if nameofstate != "" and nameofstate in dev.states:
                                 stateList.append(stateListappend)
+                            elif nameofstate!="" and nameofstate not in dev.states:
+                                self.logger.debug(unicode(nameofstate)+" NOT found in device states.  Please let Developer know and can add support")
                         except:
                             self.logger.debug("Exception Health at glance")
                             nameofstate = ""
@@ -499,13 +507,15 @@ class Plugin(indigo.PluginBase):
         updatePowerStatus = t.time()+1
         loginretry = 0
         try:
+            self.sleep(2)
             while True:
                 for dev in indigo.devices.itervalues(filter="self"):
                     self.logger.debug("Checking Device:"+unicode(dev.name))
 
                     if dev.enabled:
-                        self.get_the_data_subType(dev, "power_status")
-
+                        if t.time() > updatePowerStatus:
+                            self.get_the_data_subType(dev, "power_status")
+                            updatePowerStatus = t.time() + 60
                         if t.time() > updateHost:
                             self.get_the_data_subType(dev, "hostdata")
                             updateHost = t.time() +60 *60 *4
@@ -521,9 +531,9 @@ class Plugin(indigo.PluginBase):
                         if t.time() > updatePower:
                             self.get_the_data_subType(dev, "power")
                             updatePower = t.time() + 60 * 60
-                        if t.time() > updatePowerStatus:
-                            self.get_the_data_subType(dev, "power_status")
-                            updatePowerStatus = t.time() + 60
+
+                    self.sleep(5)
+
                 self.sleep(55)
 
             self.logger.info("Error occurred.  Reconnecting.")
@@ -591,8 +601,10 @@ class Plugin(indigo.PluginBase):
     def deviceStartComm(self, device):
         self.logger.debug(u"deviceStartComm called for " + device.name)
         device.stateListOrDisplayStateIdChanged()
-        device.updateStateOnServer('deviceIsOnline', value=True)
 
+        device.updateStateOnServer('deviceIsOnline', value=False)
+        device.updateStateOnServer("onOffState", value=False)
+        device.updateStateImageOnServer(indigo.kStateImageSel.PowerOff)
 ##
 
     def shutdown(self):

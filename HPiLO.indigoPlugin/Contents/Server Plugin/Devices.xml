@@ -349,7 +349,16 @@
                 <TriggerLabel>Health_Summary_temperature_Status</TriggerLabel>
                 <ControlPageLabel>Health_Summary_temperature_Status</ControlPageLabel>
             </State>
-
+   <State id="Health_Summary_vrm_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Health_Summary_VRM_Status</TriggerLabel>
+                <ControlPageLabel>Health_Summary_VRM_Status</ControlPageLabel>
+            </State>
+         <State id="Health_Summary_drive_Status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Health_Summary_drive_Status</TriggerLabel>
+                <ControlPageLabel>Health_Summary_drive_Status</ControlPageLabel>
+            </State>
    <State id="Host_BIOS_Date">
                 <ValueType>String</ValueType>
                 <TriggerLabel>Host_BIOS_Date</TriggerLabel>
