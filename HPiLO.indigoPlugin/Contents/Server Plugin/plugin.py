@@ -11,6 +11,7 @@ import time as t
 import xml.etree.ElementTree as Etree
 import urllib2
 import os
+import ssl
 import shutil
 import logging
 import socket
@@ -162,7 +163,7 @@ class Plugin(indigo.PluginBase):
 
 
         except hpilo.IloCommunicationError:
-            self.logger.info("Error communicating with HP iLO")
+            self.logger.exception("Error communicating with HP iLO")
             dev.updateStateOnServer('deviceIsOnline', value=False)
             return None
         except hpilo.IloLoginFailed:

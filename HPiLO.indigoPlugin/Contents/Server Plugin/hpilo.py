@@ -1,7 +1,10 @@
-# (c) 2011-2018 Dennis Kaarsemaker <dennis@kaarsemaker.net>
+#(c)
+#2011 - 2020
+#Dennis
+#Kaarsemaker < dennis @ kaarsemaker.net >
 # see COPYING for license details
 
-__version__ = "4.3"
+__version__ = "4.4.1"
 
 import codecs
 import io
@@ -22,17 +25,24 @@ import hpilo_fw
 PY3 = sys.version_info[0] >= 3
 if PY3:
     import urllib.request as urllib2
-    class Bogus(Exception): pass
+
+
+    class Bogus(Exception):
+        pass
+
+
     socket.sslerror = Bogus
     basestring = str
     from os import fsencode
 else:
     import urllib2
+
     fsencode = lambda x: x
 
 # Python 2.7.13 renamed PROTOCOL_SSLv23 to PROTOCOL_TLS
 if not hasattr(ssl, 'PROTOCOL_TLS'):
     ssl.PROTOCOL_TLS = ssl.PROTOCOL_SSLv23
+
 
 # Oh the joys of monkeypatching...
 # - We need a CDATA element in set_security_msg, but ElementTree doesn't support it
@@ -43,40 +53,56 @@ def CDATA(text=None):
     element.text = text
     return element
 
+
 # Adding this tag to RIBCL scripts should make this hack unnecessary in newer
 # iLO firmware versions. TODO: Check compatibility.
 # <?ilo entity-processing="standard"?>
 class DoNotEscapeMe(str):
     pass
 
+
 etree._original_escape_attrib = etree._escape_attrib
+
+
 def _escape_attrib(text, *args, **kwargs):
     if isinstance(text, DoNotEscapeMe):
         return str(text)
     else:
         return etree._original_escape_attrib(text, *args, **kwargs)
+
+
 etree._escape_attrib = _escape_attrib
 
 # Python 2.7 and 3
 if hasattr(etree, '_serialize_xml'):
     etree._original_serialize_xml = etree._serialize_xml
+
+
     def _serialize_xml(write, elem, *args, **kwargs):
         if elem.tag == '![CDATA[':
             write("\n<%s%s]]>\n" % (elem.tag, elem.text))
             return
         return etree._original_serialize_xml(write, elem, *args, **kwargs)
+
+
     etree._serialize_xml = etree._serialize['xml'] = _serialize_xml
 # Python 2.6, and non-stdlib ElementTree
 elif hasattr(etree.ElementTree, '_write'):
     etree.ElementTree._orig_write = etree.ElementTree._write
+
+
     def _write(self, file, node, encoding, namespaces):
         if node.tag == '![CDATA[':
             file.write("\n<![CDATA[%s]]>\n" % node.text.encode(encoding))
         else:
             self._orig_write(file, node, encoding, namespaces)
+
+
     etree.ElementTree._write = _write
 else:
-    raise RuntimeError("Don't know how to monkeypatch XML serializer workarounds. Please report a bug at https://github.com/seveas/python-hpilo")
+    raise RuntimeError(
+        "Don't know how to monkeypatch XML serializer workarounds. Please report a bug at https://github.com/seveas/python-hpilo")
+
 
 # We handle non-ascii characters in the returned XML by replacing them with XML
 # character references. This likely results in bogus data, but avoids crashes.
@@ -90,14 +116,18 @@ def iloxml_replace(error):
         if b < 128:
             break
         ret += u'?'
-    warnings.warn("Invalid ascii data found: %s, replaced with %s" % (repr(error.object[error.start:pos]), ret), IloWarning)
+    warnings.warn("Invalid ascii data found: %s, replaced with %s" % (repr(error.object[error.start:pos]), ret),
+                  IloWarning)
     return (ret, pos)
+
+
 codecs.register_error('iloxml_replace', iloxml_replace)
 
 # Which protocol to use
-ILO_RAW  = 1
+ILO_RAW = 1
 ILO_HTTP = 2
 ILO_LOCAL = 3
+
 
 class IloErrorMeta(type):
     def __new__(cls, name, parents, attrs):
@@ -110,15 +140,19 @@ class IloErrorMeta(type):
             IloError.known_subclasses.append(klass)
         return klass
 
+
 class IloError(Exception):
     __metaclass__ = IloErrorMeta
+
     def __init__(self, message, errorcode=None):
         if issubclass(IloError, object):
             super(IloError, self).__init__(message)
         else:
             Exception.__init__(self, message)
         self.errorcode = errorcode
+
     known_subclasses = []
+
 
 if PY3:
     # Python 3 ignores __metaclass__ but wants class foo(metaclass=bar) But
@@ -126,43 +160,57 @@ if PY3:
     # the manual way.
     IloError = IloErrorMeta('IloError', (Exception,), {'known_subclasses': [], '__init__': IloError.__init__})
 
+
 class IloCommunicationError(IloError):
     pass
 
+
 class IloGeneratingCSR(IloError):
-    possible_messages = ['The iLO subsystem is currently generating a Certificate Signing Request(CSR), run script after 10 minutes or more to receive the CSR.']
+    possible_messages = [
+        'The iLO subsystem is currently generating a Certificate Signing Request(CSR), run script after 10 minutes or more to receive the CSR.']
     possible_codes = [0x0088]
+
 
 class IloLoginFailed(IloError):
     possible_messages = ['Login failed', 'Login credentials rejected']
     possible_codes = [0x005f]
 
+
 class IloUserNotFound(IloError):
     possible_codes = [0x000a]
+
 
 class IloPermissionError(IloError):
     possible_codes = [0x0023]
 
+
 class IloNotARackServer(IloError):
     possible_codes = [0x002a]
+
 
 class IloLicenseKeyError(IloError):
     possible_codes = [0x002e]
 
+
 class IloFeatureNotSupported(IloError):
     possible_codes = [0x003c]
+
 
 class IloNotConfigured(IloError):
     possible_codes = [0x006d]
 
+
 class IloWarning(Warning):
     pass
+
 
 class IloXMLWarning(Warning):
     pass
 
+
 class IloTestWarning(Warning):
     pass
+
 
 class Ilo(object):
     """Represents an iLO/iLO2/iLO3/iLO4/RILOE II management interface on a
@@ -179,18 +227,19 @@ class Ilo(object):
     HTTP_UPLOAD_HEADER = b"POST /cgi-bin/uploadRibclFiles HTTP/1.1\r\nHost: localhost\r\nConnection: Close\r\nContent-Length: %d\r\nContent-Type: multipart/form-data; boundary=%s\r\n\r\n"
     BLOCK_SIZE = 64 * 1024
 
-    def __init__(self, hostname, login=None, password=None, timeout=60, port=443, protocol=None, delayed=False, ssl_verify=False, ssl_context=None, ssl_version=None):
+    def __init__(self, hostname, login=None, password=None, timeout=60, port=443, protocol=None, delayed=False,
+                 ssl_verify=False, ssl_context=None, ssl_version=None):
         self.hostname = hostname
-        self.login    = login or 'Administrator'
+        self.login = login or 'Administrator'
         self.password = password or 'Password'
-        self.timeout  = timeout
-        self.debug    = 0
-        self.port     = port
+        self.timeout = timeout
+        self.debug = 0
+        self.port = port
         self.protocol = protocol
         self.ssl_verify = False
         self.ssl_context = ssl_context
-        self.cookie   = None
-        self.delayed  = delayed
+        self.cookie = None
+        self.delayed = delayed
         self._elements = None
         self._processors = []
         self.save_response = None
@@ -203,13 +252,13 @@ class Ilo(object):
         if platform.system() == 'Windows':
             self.hponcfg = 'C:\Program Files\HP Lights-Out Configuration Utility\cpqlocfg.exe'
             hponcfg = 'cpqlocfg.exe'
-        for path in os.environ.get('PATH','').split(os.pathsep):
+        for path in os.environ.get('PATH', '').split(os.pathsep):
             maybe = os.path.join(path, hponcfg)
             if os.access(maybe, os.X_OK):
                 self.hponcfg = maybe
                 break
         if self.ssl_verify:
-            if sys.version_info < (2,7,9):
+            if sys.version_info < (2, 7, 9):
                 raise EnvironmentError("SSL verification only works with python 2.7.9 or newer")
             if not self.ssl_context:
                 self.ssl_context = ssl.create_default_context()
@@ -243,7 +292,7 @@ class Ilo(object):
         else:
             xml = etree.tostring(xml)
 
-        header, data =  self._communicate(xml, self.protocol, progress=progress)
+        header, data = self._communicate(xml, self.protocol, progress=progress)
 
         # This thing usually contains multiple XML messages
         messages = []
@@ -284,12 +333,13 @@ class Ilo(object):
     def _upload_file(self, filename, progress):
         with open(filename, 'rb') as fd:
             firmware = fd.read()
-        boundary = b'------hpiLO3t%dz' % random.randint(100000,1000000)
+        boundary = b'------hpiLO3t%dz' % random.randint(100000, 1000000)
         while boundary in firmware:
-            boundary = b'------hpiLO3t%dz' % str(random.randint(100000,1000000))
+            boundary = b'------hpiLO3t%dz' % str(random.randint(100000, 1000000))
         parts = [
             b"""--%s\r\nContent-Disposition: form-data; name="fileType"\r\n\r\n""" % boundary,
-            b"""\r\n--%s\r\nContent-Disposition: form-data; name="fwimgfile"; filename="%s"\r\nContent-Type: application/octet-stream\r\n\r\n""" % (boundary, fsencode(filename)),
+            b"""\r\n--%s\r\nContent-Disposition: form-data; name="fwimgfile"; filename="%s"\r\nContent-Type: application/octet-stream\r\n\r\n""" % (
+            boundary, fsencode(filename)),
             firmware,
             b"\r\n--%s--\r\n" % boundary,
         ]
@@ -306,14 +356,15 @@ class Ilo(object):
                 sent = 0
                 fwlen = len(part)
                 while sent < fwlen:
-                    written = sock.write(part[sent:sent+self.BLOCK_SIZE])
+                    written = sock.write(part[sent:sent + self.BLOCK_SIZE])
                     if written is None:
-                        plen = len(part[sent:sent+self.BLOCK_SIZE])
-                        raise IloCommunicationError("Unexpected EOF while sending %d bytes (%d of %d sent before)" % (plen, sent, fwlen))
+                        plen = len(part[sent:sent + self.BLOCK_SIZE])
+                        raise IloCommunicationError(
+                            "Unexpected EOF while sending %d bytes (%d of %d sent before)" % (plen, sent, fwlen))
 
                     sent += written
                     if callable(progress):
-                        progress("Sending request %d/%d bytes (%d%%)" % (sent, fwlen, 100.0*sent/fwlen))
+                        progress("Sending request %d/%d bytes (%d%%)" % (sent, fwlen, 100.0 * sent / fwlen))
 
         data = ''
         try:
@@ -322,9 +373,10 @@ class Ilo(object):
                 data += d.decode('ascii')
                 if not d:
                     break
-        except socket.sslerror as exc: # Connection closed
+        except socket.sslerror as exc:  # Connection closed
             if not data:
-                raise IloCommunicationError("Communication with %s:%d failed: %s" % (self.hostname, self.port, str(exc)))
+                raise IloCommunicationError(
+                    "Communication with %s:%d failed: %s" % (self.hostname, self.port, str(exc)))
 
         self._debug(1, "Received %d bytes" % len(data))
         self._debug(2, data)
@@ -350,10 +402,13 @@ class Ilo(object):
                     data = self.input.read(4)
                     self.input.seek(0)
                     self.protocol = data == b'HTTP' and ILO_HTTP or ILO_RAW
+
                 def close(self):
                     self.input.close()
                     self.output.close()
+
                 shutdown = lambda *args: None
+
             sock = FakeSocket(self.read_response, self.save_request)
             if self.read_response:
                 self.protocol = sock.protocol
@@ -362,7 +417,8 @@ class Ilo(object):
         if self.protocol == ILO_LOCAL:
             self._debug(1, "Launching hponcfg")
             try:
-                sp = subprocess.Popen([self.hponcfg, '--input', '--xmlverbose'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                sp = subprocess.Popen([self.hponcfg, '--input', '--xmlverbose'], stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except OSError as exc:
                 raise IloCommunicationError("Cannot run %s: %s" % (self.hponcfg, str(exc)))
             sp.write = sp.stdin.write
@@ -395,12 +451,17 @@ class Ilo(object):
             raise IloCommunicationError("Unable to resolve %s" % self.hostname)
 
         try:
-            if self.ssl_context:
-                return self.ssl_context.wrap_socket(sock, server_hostname=self.hostname)
-            else:
-                return ssl.wrap_socket(sock, ssl_version=ssl.PROTOCOL_TLS)
+            if not self.ssl_context:
+                self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+                # Even more sadly, some iLOs are still using RC4-SHA
+                # which was dropped from the default cipher suite in
+                # Python 2.7.10 and Python 3.4.4. Add it back here :(
+                self.ssl_context.set_ciphers("RC4-SHA:" + ssl._DEFAULT_CIPHERS)
+            return self.ssl_context.wrap_socket(
+                sock, server_hostname=self.hostname)
         except ssl.SSLError as exc:
-            raise IloCommunicationError("Cannot establish ssl session with %s:%d: %s" % (self.hostname, self.port, str(exc)))
+            raise IloCommunicationError(
+                "Cannot establish ssl session with %s:%d: %s" % (self.hostname, self.port, str(exc)))
 
     def _communicate(self, xml, protocol, progress=None, save=True):
         sock = self._get_socket()
@@ -432,10 +493,10 @@ class Ilo(object):
             with open(name, 'rb') as fd:
                 fw = fd.read()
             while sent < fwlen:
-                written = sock.write(fw[sent:sent+self.BLOCK_SIZE])
+                written = sock.write(fw[sent:sent + self.BLOCK_SIZE])
                 sent += written
                 if callable(progress):
-                    progress("Sending request %d/%d bytes (%d%%)" % (sent, fwlen, 100.0*sent/fwlen))
+                    progress("Sending request %d/%d bytes (%d%%)" % (sent, fwlen, 100.0 * sent / fwlen))
             sock.write(post.strip())
         else:
             sock.write(xml)
@@ -468,9 +529,10 @@ class Ilo(object):
                             if msg:
                                 progress(msg)
                             d = d[end:]
-        except socket.sslerror as exc: # Connection closed
+        except socket.sslerror as exc:  # Connection closed
             if not data:
-                raise IloCommunicationError("Communication with %s:%d failed: %s" % (self.hostname, self.port, str(exc)))
+                raise IloCommunicationError(
+                    "Communication with %s:%d failed: %s" % (self.hostname, self.port, str(exc)))
 
         self._debug(1, "Received %d bytes" % len(data))
         if self.protocol == ILO_LOCAL:
@@ -489,7 +551,7 @@ class Ilo(object):
 
         # Stript out garbage from hponcfg
         if self.protocol == ILO_LOCAL:
-            data = data[data.find('<'):data.rfind('>')+1]
+            data = data[data.find('<'):data.rfind('>') + 1]
 
         if self.save_response and save:
             with open(self.save_response, 'a') as fd:
@@ -510,7 +572,7 @@ class Ilo(object):
                     if clen == 0:
                         break
                     data += _data[:clen]
-                    _data = _data[clen+2:]
+                    _data = _data[clen + 2:]
 
         elif data.startswith('HTTP/1.1 404'):
             # We must be using iLO2 or older, they don't do HTTP for XML requests
@@ -527,7 +589,6 @@ class Ilo(object):
 
         self._debug(2, "%s\r\n\r\n%s" % (header_, data))
         return header, data
-
 
     def _root_element(self, element, **attrs):
         """Create a basic XML structure for a message. Return root and innermost element"""
@@ -554,6 +615,11 @@ class Ilo(object):
 
         if '<RIBCL VERSION="2.22"/>' in data:
             data = data.replace('<RIBCL VERSION="2.22"/>', '<RIBCL VERSION="2.22">')
+
+        # Remove binary 01 in xml output. This bug was seen on a faulty PSU.
+        if '\x01' in data:
+            data = data.replace('\x01', '')
+
         # Quite a few unescaped quotation mark bugs keep appearing. Let's try
         # to fix up the XML by replacing the last occurence of a quotation mark
         # *before* the position of the error.
@@ -568,11 +634,11 @@ class Ilo(object):
                 return etree.fromstring(data)
             except etree.ParseError as e:
                 position = e.position
-                x = position[0]-1
+                x = position[0] - 1
                 y = position[1]
                 lines = data.splitlines()
                 y = lines[x].rfind('"', 0, y)
-                lines[x] = lines[x][:y] + '&quot;' + lines[x][y+1:]
+                lines[x] = lines[x][:y] + '&quot;' + lines[x][y + 1:]
                 data = '\n'.join(lines)
         # Couldn't fix it :(
         raise
@@ -630,16 +696,19 @@ class Ilo(object):
             retval = []
         for elt in element:
             # There are some special tags
-            fname =  '_parse_%s_%s' % (element.tag.lower(), elt.tag.lower())
+            fname = '_parse_%s_%s' % (element.tag.lower(), elt.tag.lower())
             if hasattr(self, fname):
                 retval.update(getattr(self, fname)(elt))
                 continue
-            key, val, unit, description = elt.tag.lower(), elt.get('VALUE', elt.get('value', None)), elt.get('UNIT', None), elt.get('DESCRIPTION', None)
+            key, val, unit, description = elt.tag.lower(), elt.get('VALUE', elt.get('value', None)), elt.get('UNIT',
+                                                                                                             None), elt.get(
+                'DESCRIPTION', None)
             if val is None:
                 # HP is not best friends with consistency. Sometimes there are
                 # attributes, sometimes child tags and sometimes text nodes. Oh
                 # well, deal with it :)
-                if element.tag.lower() == 'rimp' or elt.tag.lower() in self.xmldata_ectd.get(element.tag.lower(), []) or elt.tag.lower() == 'temps':
+                if element.tag.lower() == 'rimp' or elt.tag.lower() in self.xmldata_ectd.get(element.tag.lower(),
+                                                                                             []) or elt.tag.lower() == 'temps':
                     val = self._element_children_to_dict(elt)
                 elif elt.attrib and list(elt):
                     val = self._element_to_dict(elt)
@@ -781,12 +850,10 @@ class Ilo(object):
            connection to the iLO and sends all commands as one XML document.
            This speeds up applications that make many calls to the iLO by
            removing seconds of overhead per call.
-
            The return value of call_delayed is a list of return values for
            individual methods that don't return None. This means that there may
            be fewer items returned than methods called as only `get_*` methods
            return data
-
            Delayed calls only work on iLO 2 or newer"""
 
         if not self._elements:
@@ -815,8 +882,8 @@ class Ilo(object):
         return self._control_tag('RIB_INFO', 'LICENSE', elements=[license])
 
     def add_federation_group(self, group_name, group_key, admin_priv=False,
-            remote_cons_priv=True, reset_server_priv=False,
-            virtual_media_priv=False, config_ilo_priv=True, login_priv=False):
+                             remote_cons_priv=True, reset_server_priv=False,
+                             virtual_media_priv=False, config_ilo_priv=True, login_priv=False):
         """Add a new federation group"""
         attrs = locals()
         elements = []
@@ -825,7 +892,7 @@ class Ilo(object):
             elements.append(etree.Element(attribute.upper(), VALUE=val))
 
         return self._control_tag('RIB_INFO', 'ADD_FEDERATION_GROUP', elements=elements,
-                attrib={'GROUP_NAME': group_name, 'GROUP_KEY': group_key})
+                                 attrib={'GROUP_NAME': group_name, 'GROUP_KEY': group_key})
 
     def add_sso_server(self, server=None, import_from=None, certificate=None):
         """Add an SSO server by name (only if SSO trust level is lowered) or by
@@ -840,8 +907,8 @@ class Ilo(object):
             return self._control_tag('SSO_INFO', 'IMPORT_CERTIFICATE', text=certificate)
 
     def add_user(self, user_login, user_name, password, admin_priv=False,
-            remote_cons_priv=True, reset_server_priv=False,
-            virtual_media_priv=False, config_ilo_priv=True):
+                 remote_cons_priv=True, reset_server_priv=False,
+                 virtual_media_priv=False, config_ilo_priv=True):
         """Add a new user to the iLO interface with the specified name,
            password and permissions. Permission attributes should be boolean
            values."""
@@ -852,7 +919,8 @@ class Ilo(object):
             elements.append(etree.Element(attribute.upper(), VALUE=val))
 
         return self._control_tag('USER_INFO', 'ADD_USER', elements=elements,
-                attrib={'USER_LOGIN': user_login, 'USER_NAME': user_name, 'PASSWORD': DoNotEscapeMe(password)})
+                                 attrib={'USER_LOGIN': user_login, 'USER_NAME': user_name,
+                                         'PASSWORD': DoNotEscapeMe(password)})
 
     def ahs_clear_data(self):
         """Clears Active Health System information log"""
@@ -864,7 +932,7 @@ class Ilo(object):
         return self._control_tag('RIB_INFO', 'CERT_FQDN', attrib={'VALUE': use_fqdn})
 
     def certificate_signing_request(self, country=None, state=None, locality=None, organization=None,
-            organizational_unit=None, common_name=None):
+                                    organizational_unit=None, common_name=None):
         """Get a certificate signing request from the iLO"""
         vars = locals()
         del vars['self']
@@ -906,7 +974,8 @@ class Ilo(object):
 
     def delete_sso_server(self, index):
         """Delete an SSO server by index"""
-        return self._control_tag('SSO_INFO', 'DELETE_SERVER', index)
+        return self._control_tag('SSO_INFO', 'DELETE_SERVER',
+                                 attrib={'INDEX': str(index)})
 
     def delete_user(self, user_login):
         """Delete the specified user from the ilo"""
@@ -928,7 +997,7 @@ class Ilo(object):
     def eject_virtual_media(self, device="cdrom"):
         """Eject the virtual media attached to the specified device"""
         return self._control_tag('RIB_INFO', 'EJECT_VIRTUAL_MEDIA',
-                attrib={"DEVICE": device.upper()})
+                                 attrib={"DEVICE": device.upper()})
 
     def ers_ahs_submit(self, message_id, bb_days):
         """Submity AHS data to the insight remote support server"""
@@ -959,6 +1028,7 @@ class Ilo(object):
 
     def get_all_users(self):
         """Get a list of all loginnames"""
+
         def process(data):
             if isinstance(data, dict):
                 data = data.values()
@@ -968,10 +1038,12 @@ class Ilo(object):
 
     def get_all_user_info(self):
         """Get basic and authorization info of all users"""
+
         def process(data):
             if isinstance(data, dict):
                 data = data.values()
             return dict([(x['user_login'], x) for x in data])
+
         return self._info_tag('USER_INFO', 'GET_ALL_USER_INFO', process=process)
 
     def get_asset_tag(self):
@@ -1005,14 +1077,17 @@ class Ilo(object):
 
     def get_dir_test_results(self):
         """Get the results of the authentication directory test"""
+
         def process(data):
             for item in data:
                 data[item] = dict([(x[0], x[1]['value']) for x in data[item]])
             return data
+
         return self._info_tag('DIR_INFO', 'GET_DIR_TEST_RESULTS', process=process)
 
     def get_embedded_health(self):
         """Get server health information"""
+
         def process(data):
             for category in data:
                 if category == 'health_at_a_glance':
@@ -1032,8 +1107,9 @@ class Ilo(object):
                 elif data[category] in ['', []]:
                     data[category] = None
             return data
+
         return self._info_tag('SERVER_INFO', 'GET_EMBEDDED_HEALTH', 'GET_EMBEDDED_HEALTH_DATA',
-                process=process)
+                              process=process)
 
     # Ok, special XML structures. Yay.
     def _parse_get_embedded_health_data_drives(self, element):
@@ -1041,7 +1117,7 @@ class Ilo(object):
         for bp in element:
             if bp.tag != 'BACKPLANE':
                 raise IloError("Unexpected data returned: %s" % bp.tag)
-            backplane =  obj = {'drive_bays': {}}
+            backplane = obj = {'drive_bays': {}}
             ret.append(backplane)
             for elt in bp:
                 if elt.tag == 'DRIVE_BAY':
@@ -1054,12 +1130,13 @@ class Ilo(object):
     def _parse_get_embedded_health_data_memory(self, element):
         ret = {}
         for elt in element:
-            fname =  '_parse_%s_%s' % (element.tag.lower(), elt.tag.lower())
+            fname = '_parse_%s_%s' % (element.tag.lower(), elt.tag.lower())
             if hasattr(self, fname):
                 ret.update(getattr(self, fname)(elt))
                 continue
             ret[elt.tag.lower()] = self._element_children_to_dict(elt)
         return {element.tag.lower(): ret}
+
     _parse_memory_memory_details_summary = _parse_get_embedded_health_data_memory
 
     def _parse_memory_memory_details(self, element):
@@ -1073,6 +1150,7 @@ class Ilo(object):
 
     def _parse_get_embedded_health_data_nic_information(self, element):
         return {'nic_information': [self._element_children_to_dict(elt) for elt in element]}
+
     # Can you notice the misspelling?Yes, this is an actual bug in the HP firmware, seen in at least ilo3 1.70
     _parse_get_embedded_health_data_nic_infomation = _parse_get_embedded_health_data_nic_information
 
@@ -1144,25 +1222,34 @@ class Ilo(object):
 
     def get_federation_all_groups(self):
         """Get all federation group names"""
+
         def process(data):
             if isinstance(data, dict):
                 data = data.values()
             return data
+
         return self._info_tag('RIB_INFO', 'GET_FEDERATION_ALL_GROUPS', process=process)
 
     def get_federation_all_groups_info(self):
         """Get all federation group names and associated privileges"""
+
         def process(data):
             if isinstance(data, dict):
                 data = data.values()
-            data = [dict([(key, {'yes': True, 'no': False}.get(val['value'].lower(), val['value'])) for (key, val) in group]) for group in data]
+            data = [dict(
+                [(key, {'yes': True, 'no': False}.get(val['value'].lower(), val['value'])) for (key, val) in group]) for
+                    group in data]
             return dict([(x['group_name'], x) for x in data])
+
         return self._info_tag('RIB_INFO', 'GET_FEDERATION_ALL_GROUPS_INFO', process=process)
 
     def get_federation_group(self, group_name):
         """Get privileges for a specific federation group"""
+
         def process(data):
-            return dict([(key, {'yes': True, 'no': False}.get(val['value'].lower(), val['value'])) for (key, val) in data.values()[0]])
+            return dict([(key, {'yes': True, 'no': False}.get(val['value'].lower(), val['value'])) for (key, val) in
+                         data.values()[0]])
+
         return self._info_tag('RIB_INFO', 'GET_FEDERATION_GROUP', attrib={'GROUP_NAME': group_name}, process=process)
 
     def get_federation_multicast(self):
@@ -1190,6 +1277,7 @@ class Ilo(object):
             if decoded_only:
                 data = [x for x in data if len(x) > 2]
             return data
+
         return self._info_tag('SERVER_INFO', 'GET_HOST_DATA', process=process)
 
     def get_host_power_reg_info(self):
@@ -1203,19 +1291,21 @@ class Ilo(object):
     def get_host_power_status(self):
         """Whether the server is powered on or not"""
         return self._info_tag('SERVER_INFO', 'GET_HOST_POWER_STATUS', 'GET_HOST_POWER',
-                process=lambda data: data['host_power'])
+                              process=lambda data: data['host_power'])
 
     def get_host_pwr_micro_ver(self):
         """Get the version of the power micro firmware"""
         return self._info_tag('SERVER_INFO', 'GET_HOST_PWR_MICRO_VER',
-                process=lambda data: data['pwr_micro']['version'])
+                              process=lambda data: data['pwr_micro']['version'])
 
     def get_ilo_event_log(self):
         """Get the full iLO event log"""
+
         def process(data):
             if isinstance(data, dict) and 'event' in data:
                 return [data['event']]
             return data
+
         return self._info_tag('RIB_INFO', 'GET_EVENT_LOG', 'EVENT_LOG', process=process)
 
     def get_language(self):
@@ -1228,10 +1318,12 @@ class Ilo(object):
 
     def get_all_licenses(self):
         """Get a list of all license types and licenses"""
+
         def process(data):
             if not isinstance(data, list):
                 data = data.values()
             return [dict([(x[0], x[1]['value']) for x in row]) for row in data]
+
         return self._info_tag('RIB_INFO', 'GET_ALL_LICENSES', process=process)
 
     def get_hotkey_config(self):
@@ -1248,12 +1340,15 @@ class Ilo(object):
 
     def get_one_time_boot(self):
         """Get the one time boot state of the host"""
+
         # Inconsistency between iLO 2 and 3, let's fix that
         def process(data):
             if 'device' in data['boot_type']:
                 data['boot_type'] = data['boot_type']['device']
             return data['boot_type'].lower()
-        return self._info_tag('SERVER_INFO', 'GET_ONE_TIME_BOOT', ('ONE_TIME_BOOT', 'GET_ONE_TIME_BOOT'), process=process)
+
+        return self._info_tag('SERVER_INFO', 'GET_ONE_TIME_BOOT', ('ONE_TIME_BOOT', 'GET_ONE_TIME_BOOT'),
+                              process=process)
 
     def get_pending_boot_mode(self):
         """Get the pending boot mode (legaci or uefi)"""
@@ -1263,6 +1358,7 @@ class Ilo(object):
         """Get the boot order of the host. For uEFI hosts (gen9+), this returns
            a list of tuples (name, description. For older host it returns a
            list of names"""
+
         def process(data):
             if isinstance(data, dict):
                 data = list(data.items())
@@ -1271,11 +1367,14 @@ class Ilo(object):
             elif isinstance(data[0], tuple):
                 return data
             return [x.lower() for x in data]
-        return self._info_tag('SERVER_INFO', 'GET_PERSISTENT_BOOT', ('PERSISTENT_BOOT', 'GET_PERSISTENT_BOOT'), process=process)
+
+        return self._info_tag('SERVER_INFO', 'GET_PERSISTENT_BOOT', ('PERSISTENT_BOOT', 'GET_PERSISTENT_BOOT'),
+                              process=process)
 
     def get_pers_mouse_keyboard_enabled(self):
         """Returns whether persistent mouse and keyboard are enabled"""
-        return self._info_tag('SERVER_INFO', 'GET_PERS_MOUSE_KEYBOARD_ENABLED', process=lambda data: data['persmouse_enabled'])
+        return self._info_tag('SERVER_INFO', 'GET_PERS_MOUSE_KEYBOARD_ENABLED',
+                              process=lambda data: data['persmouse_enabled'])
 
     def get_power_cap(self):
         """Get the power cap setting"""
@@ -1311,10 +1410,12 @@ class Ilo(object):
 
     def get_server_event_log(self):
         """Get the IML log of the server"""
+
         def process(data):
             if isinstance(data, dict) and 'event' in data:
                 return [data['event']]
             return data
+
         return self._info_tag('SERVER_INFO', 'GET_EVENT_LOG', 'EVENT_LOG', process=process)
 
     def get_server_fqdn(self):
@@ -1327,7 +1428,8 @@ class Ilo(object):
 
     def get_server_power_on_time(self):
         """How many minutes ago has the server been powered on"""
-        return self._info_tag('SERVER_INFO', 'GET_SERVER_POWER_ON_TIME', 'SERVER_POWER_ON_MINUTES', process=lambda data: int(data['value']))
+        return self._info_tag('SERVER_INFO', 'GET_SERVER_POWER_ON_TIME', 'SERVER_POWER_ON_MINUTES',
+                              process=lambda data: int(data['value']))
 
     def get_smh_fqdn(self):
         """Get the fqdn of the HP System Management Homepage"""
@@ -1346,7 +1448,8 @@ class Ilo(object):
         return self._info_tag('SSO_INFO', 'GET_SSO_SETTINGS')
 
     def get_supported_boot_mode(self):
-        return self._info_tag('SERVER_INFO', 'GET_SUPPORTED_BOOT_MODE', process=lambda data: data['supported_boot_mode'])
+        return self._info_tag('SERVER_INFO', 'GET_SUPPORTED_BOOT_MODE',
+                              process=lambda data: data['supported_boot_mode'])
 
     def get_topology(self):
         """Get rack topology information"""
@@ -1391,7 +1494,7 @@ class Ilo(object):
         # Basic sanity checking
         if ' ' not in ssh_key:
             raise ValueError("Invalid SSH key")
-        algo, key = ssh_key.split(' ',2)[:2]
+        algo, key = ssh_key.split(' ', 2)[:2]
         if algo not in ['ssh-dss', 'ssh-rsa']:
             raise ValueError("Invalid SSH key, only DSA and RSA keys are supported")
         try:
@@ -1403,15 +1506,18 @@ class Ilo(object):
 
     def delete_ssh_key(self, user_login):
         """Delete a users SSH key"""
-        return self._control_tag('USER_INFO', 'MOD_USER', attrib={'USER_LOGIN': user_login}, elements=[etree.Element('DEL_USERS_SSH_KEY')])
+        return self._control_tag('USER_INFO', 'MOD_USER', attrib={'USER_LOGIN': user_login},
+                                 elements=[etree.Element('DEL_USERS_SSH_KEY')])
 
     def insert_virtual_media(self, device, image_url):
         """Insert a virtual floppy or CDROM. Note that you will also need to
            use :func:`set_vm_status` to connect the media"""
-        return self._control_tag('RIB_INFO', 'INSERT_VIRTUAL_MEDIA', attrib={'DEVICE': device.upper(), 'IMAGE_URL': image_url})
+        return self._control_tag('RIB_INFO', 'INSERT_VIRTUAL_MEDIA',
+                                 attrib={'DEVICE': device.upper(), 'IMAGE_URL': image_url})
 
     def mod_encrypt_settings(self, user_login, password, ilo_group_name, cert_name, enable_redundancy,
-            primary_server_address, primary_server_port, secondary_server_address=None, secondary_server_port=None):
+                             primary_server_address, primary_server_port, secondary_server_address=None,
+                             secondary_server_port=None):
         """Configure encryption settings"""
         vars = locals()
         del vars['self']
@@ -1425,8 +1531,8 @@ class Ilo(object):
         return self._control_tag('RIB_INFO', 'MOD_ENCRYPT_SETTINGS', elements=elements)
 
     def mod_federation_group(self, group_name, new_group_name=None, group_key=None,
-            admin_priv=None, remote_cons_priv=None, reset_server_priv=None,
-            virtual_media_priv=None, config_ilo_priv=None, login_priv=None):
+                             admin_priv=None, remote_cons_priv=None, reset_server_priv=None,
+                             virtual_media_priv=None, config_ilo_priv=None, login_priv=None):
         """Set attributes for a federation group, only specified arguments will
            be changed.  All arguments except group_name, new_group_name and
            group_key should be boolean"""
@@ -1440,49 +1546,92 @@ class Ilo(object):
             if attrs[attribute] is not None:
                 val = ['No', 'Yes'][bool(attrs[attribute])]
                 elements.append(etree.Element(attribute.upper(), VALUE=val))
-        return self._control_tag('RIB_INFO', 'MOD_FEDERATION_GROUP', attrib={'GROUP_NAME': group_name}, elements=elements)
+        return self._control_tag('RIB_INFO', 'MOD_FEDERATION_GROUP', attrib={'GROUP_NAME': group_name},
+                                 elements=elements)
 
     def mod_global_settings(self, ilo_funct_enabled=None, rbsu_post_ip=None,
-            # Access settings
-            f8_prompt_enabled=None, f8_login_required=None, lock_configuration=None,
-            serial_cli_status=None, serial_cli_speed=None,
-            http_port=None, https_port=None, ssh_port=None, ssh_status=None,
-            ipmi_dcmi_over_lan_enabled=None, ipmi_dcmi_over_lan_port=None,
-            remote_console_port_status=None, remote_console_port=None, remote_console_encryption=None,
-            rawvsp_port=None, vsp_software_flow_control=None,
-            terminal_services_port=None,
-            shared_console_enable=None, shared_console_port=None, remote_console_acquire=None,
-            telnet_enable=None, ssl_empty_records_enable=None,
+                            # Access settings
+                            f8_prompt_enabled=None, f8_login_required=None, lock_configuration=None,
+                            serial_cli_status=None, serial_cli_speed=None,
+                            http_port=None, https_port=None, ssh_port=None, ssh_status=None,
+                            ipmi_dcmi_over_lan_enabled=None, ipmi_dcmi_over_lan_port=None,
+                            remote_console_port_status=None, remote_console_port=None, remote_console_encryption=None,
+                            rawvsp_port=None, vsp_software_flow_control=None,
+                            terminal_services_port=None,
+                            shared_console_enable=None, shared_console_port=None, remote_console_acquire=None,
+                            telnet_enable=None, ssl_empty_records_enable=None, remote_console_status=None,
+                            ribcl_status=None, virtual_media_status=None, webgui_status=None, webserver_status=None,
 
-            # Security settings
-            min_password=None, enforce_aes=None, authentication_failure_logging=None,
-            authentication_failure_delay_secs=None, authentication_failures_before_delay=None,
-            ssl_v3_enable=None, session_timeout=None,
+                            # Security settings
+                            min_password=None, enforce_aes=None, authentication_failure_logging=None,
+                            authentication_failure_delay_secs=None, authentication_failures_before_delay=None,
+                            ssl_v3_enable=None, session_timeout=None,
 
-            # Monitoring & alerting
-            snmp_access_enabled=None, snmp_port=None, snmp_trap_port=None,
-            remote_syslog_enable=None, remote_syslog_server_address=None, remote_syslog_port=None,
-            alertmail_enable=None, alertmail_email_address=None,
-            alertmail_sender_domain=None, alertmail_smtp_server=None, alertmail_smtp_port=None,
+                            # Monitoring & alerting
+                            snmp_access_enabled=None, snmp_port=None, snmp_trap_port=None,
+                            remote_syslog_enable=None, remote_syslog_server_address=None, remote_syslog_port=None,
+                            alertmail_enable=None, alertmail_email_address=None,
+                            alertmail_sender_domain=None, alertmail_smtp_server=None, alertmail_smtp_port=None,
+                            alertmail_smtp_auth_enable=None, alertmail_smtp_auth_username=None,
+                            alertmail_smtp_secure_enable=None,
 
-            # Console capturing
-            vsp_log_enable=None,
-            interactive_console_replay_enable=None, console_capture_enable=None,
-            console_capture_boot_buffer_enable=None, console_capture_fault_buffer_enable=None,
-            console_capture_port=None,
-            capture_auto_export_enable=None, capture_auto_export_location=None,
-            capture_auto_export_username=None, capture_auto_export_password=None,
+                            # Console capturing
+                            vsp_log_enable=None,
+                            interactive_console_replay_enable=None, console_capture_enable=None,
+                            console_capture_boot_buffer_enable=None, console_capture_fault_buffer_enable=None,
+                            console_capture_port=None,
+                            capture_auto_export_enable=None, capture_auto_export_location=None,
+                            capture_auto_export_username=None, capture_auto_export_password=None,
 
-            # And the rest
-            remote_keyboard_model=None, virtual_kbmouse_connection=None, vmedia_disable=None,
-            virtual_media_port=None, key_up_key_down_enable=None, high_performance_mouse=None,
-            brownout_recovery=None, enhanced_cli_prompt_enable=None, tcp_keep_alive_enable=None,
-            propagate_time_to_host=None, passthrough_config=None):
+                            # And the rest
+                            remote_keyboard_model=None, virtual_kbmouse_connection=None, vmedia_disable=None,
+                            virtual_media_port=None, key_up_key_down_enable=None, high_performance_mouse=None,
+                            brownout_recovery=None, enhanced_cli_prompt_enable=None, tcp_keep_alive_enable=None,
+                            propagate_time_to_host=None, passthrough_config=None):
         """Modify iLO global settings, only values that are specified will be changed. Note that
            many settings only work on certain iLO models and firmware versions"""
         vars = dict(locals())
         del vars['self']
-        dont_map = ['authentication_failure_logging', 'authentication_failures_before_delay', 'serial_cli_speed']
+
+        # even though a get_global_settings returns the actual speed we have to use
+        # numerical values between 0 (unchanged) and 6 to represent speed
+        serial_cli_speed_options = {
+            '9600': 1,
+            '19200': 2,
+            '38400': 3,
+            '57600': 4,
+            '115200': 5,
+        }
+
+        # same with serial_cli_status
+        serial_cli_status_options = {
+            'Disabled': 1,
+            'Enabled-No Authentication': 2,
+            'Enabled-Authentication Required': 3,
+        }
+
+        # and authentication_failure_logging
+        authentication_failure_logging_options = {
+            'Disabled': 0,
+            'Enabled-every failure': 1,
+            'Enabled-every 2nd failure': 2,
+            'Enabled-every 3rd failure': 3,
+            'Enabled-every 5th failure': 5,
+        }
+
+        vars_mappings = {
+            "serial_cli_speed": serial_cli_speed_options,
+            "serial_cli_status": serial_cli_status_options,
+            "authentication_failure_logging": authentication_failure_logging_options
+        }
+
+        for var_name, var_mappings in vars_mappings.items():
+            if vars.get(var_name, None) is not None:
+                var_value = str(vars.get(var_name))
+                vars[var_name] = str(var_mappings.get(var_value, var_value))
+
+        dont_map = ['authentication_failure_logging', 'authentication_failures_before_delay', 'serial_cli_speed',
+                    'min_password', 'session_timeout', "serial_cli_status"]
         elements = [etree.Element(x.upper(), VALUE=str({True: 'Yes', False: 'No'}.get(vars[x], vars[x])))
                     for x in vars if vars[x] is not None and x not in dont_map] + \
                    [etree.Element(x.upper(), VALUE=str(vars[x]))
@@ -1490,26 +1639,26 @@ class Ilo(object):
         return self._control_tag('RIB_INFO', 'MOD_GLOBAL_SETTINGS', elements=elements)
 
     def mod_network_settings(self, enable_nic=None, reg_ddns_server=None,
-            ping_gateway=None, dhcp_domain_name=None, speed_autoselect=None,
-            nic_speed=None, full_duplex=None, dhcp_enable=None,
-            ip_address=None, subnet_mask=None, gateway_ip_address=None,
-            dns_name=None, domain_name=None, dhcp_gateway=None,
-            dhcp_dns_server=None, dhcp_wins_server=None, dhcp_static_route=None,
-            reg_wins_server=None, prim_dns_server=None, sec_dns_server=None,
-            ter_dns_server=None, prim_wins_server=None, sec_wins_server=None,
-            static_route_1=None, static_route_2=None, static_route_3=None,
-            dhcp_sntp_settings=None, sntp_server1=None, sntp_server2=None,
-            timezone=None, enclosure_ip_enable=None, web_agent_ip_address=None,
-            shared_network_port=None, vlan_enabled=None, vlan_id=None,
-            shared_network_port_vlan=None, shared_network_port_vlan_id=None, ipv6_address=None,
-            ipv6_static_route_1=None, ipv6_static_route_2=None, ipv6_static_route_3=None,
-            ipv6_prim_dns_server=None, ipv6_sec_dns_server=None, ipv6_ter_dns_server=None,
-            ipv6_default_gateway=None, ipv6_preferred_protocol=None, ipv6_addr_autocfg=None,
-            ipv6_reg_ddns_server=None, dhcpv6_dns_server=None, dhcpv6_rapid_commit=None,
-            dhcpv6_stateful_enable=None, dhcpv6_stateless_enable=None, dhcpv6_sntp_settings=None,
-            dhcpv6_domain_name=None, ilo_nic_auto_select=None, ilo_nic_auto_snp_scan=None,
-            ilo_nic_auto_delay=None, ilo_nic_fail_over=None, gratuitous_arp=None,
-            ilo_nic_fail_over_delay=None):
+                             ping_gateway=None, dhcp_domain_name=None, speed_autoselect=None,
+                             nic_speed=None, full_duplex=None, dhcp_enable=None,
+                             ip_address=None, subnet_mask=None, gateway_ip_address=None,
+                             dns_name=None, domain_name=None, dhcp_gateway=None,
+                             dhcp_dns_server=None, dhcp_wins_server=None, dhcp_static_route=None,
+                             reg_wins_server=None, prim_dns_server=None, sec_dns_server=None,
+                             ter_dns_server=None, prim_wins_server=None, sec_wins_server=None,
+                             static_route_1=None, static_route_2=None, static_route_3=None,
+                             dhcp_sntp_settings=None, sntp_server1=None, sntp_server2=None,
+                             timezone=None, enclosure_ip_enable=None, web_agent_ip_address=None,
+                             shared_network_port=None, vlan_enabled=None, vlan_id=None,
+                             shared_network_port_vlan=None, shared_network_port_vlan_id=None, ipv6_address=None,
+                             ipv6_static_route_1=None, ipv6_static_route_2=None, ipv6_static_route_3=None,
+                             ipv6_prim_dns_server=None, ipv6_sec_dns_server=None, ipv6_ter_dns_server=None,
+                             ipv6_default_gateway=None, ipv6_preferred_protocol=None, ipv6_addr_autocfg=None,
+                             ipv6_reg_ddns_server=None, dhcpv6_dns_server=None, dhcpv6_rapid_commit=None,
+                             dhcpv6_stateful_enable=None, dhcpv6_stateless_enable=None, dhcpv6_sntp_settings=None,
+                             dhcpv6_domain_name=None, ilo_nic_auto_select=None, ilo_nic_auto_snp_scan=None,
+                             ilo_nic_auto_delay=None, ilo_nic_fail_over=None, gratuitous_arp=None,
+                             ilo_nic_fail_over_delay=None, snp_port=None):
         """Configure the network settings for the iLO card. The static route arguments require
            dicts as arguments. The necessary keys in these dicts are dest,
            gateway and mask all in dotted-quad form"""
@@ -1519,8 +1668,13 @@ class Ilo(object):
         # For the ipv4 route elements, {'dest': XXX, 'gateway': XXX}
         # ipv6 routes are ipv6_dest, prefixlen, ipv6_gateway
         # IPv6 addresses may specify prefixlength as /64 (default 64)
+        dont_map = ['prefixlen', 'ilo_nic_auto_snp_scan', 'ilo_nic_auto_delay', 'ilo_nic_fail_over_delay', 'snp_port',
+                    'vlan_id']
         elements = [etree.Element(x.upper(), VALUE=str({True: 'Yes', False: 'No'}.get(vars[x], vars[x])))
-                    for x in vars if vars[x] is not None and 'static_route_' not in x]
+                    for x in vars if vars[x] is not None and 'static_route_' not in x and x not in dont_map] + \
+                   [etree.Element(x.upper(), VALUE=str(vars[x]))
+                    for x in vars if vars[x] is not None and 'static_route_' not in x and x in dont_map]
+
         for key in vars:
             if 'static_route_' not in key or not vars[key]:
                 continue
@@ -1538,33 +1692,39 @@ class Ilo(object):
                     element.attrib.update({'VALUE': addr, 'PREFIXLEN': plen})
                 if 'PREFIXLEN' not in element.attrib:
                     element.attrib['PREFIXLEN'] = '64'
+            if "IPV6_STATIC_ROUTE_" in element.tag:
+                plen = element.attrib['PREFIXLEN']
+                if not isinstance(plen, basestring):
+                    element.attrib['PREFIXLEN'] = str(plen)
         return self._control_tag('RIB_INFO', 'MOD_NETWORK_SETTINGS', elements=elements)
+
     mod_network_settings.requires_dict = ['static_route_1', 'static_route_2', 'static_route_3',
-        'ipv6_static_route_1', 'ipv6_static_route_2', 'ipv6_static_route_3']
+                                          'ipv6_static_route_1', 'ipv6_static_route_2', 'ipv6_static_route_3']
 
     def mod_dir_config(self, dir_authentication_enabled=None,
-            dir_local_user_acct=None,dir_server_address=None,
-            dir_server_port=None,dir_object_dn=None,dir_object_password=None,
-            dir_user_context_1=None,dir_user_context_2=None,
-            dir_user_context_3=None,dir_user_context_4=None,
-            dir_user_context_5=None,dir_user_context_6=None,
-            dir_user_context_7=None,dir_user_context_8=None,
-            dir_user_context_9=None,dir_user_context_10=None,
-            dir_user_context_11=None,dir_user_context_12=None,
-            dir_user_context_13=None,dir_user_context_14=None,
-            dir_user_context_15=None,dir_enable_grp_acct=None,
-            dir_kerberos_enabled=None,dir_kerberos_realm=None,
-            dir_kerberos_kdc_address=None,dir_kerberos_kdc_port=None,
-            dir_kerberos_keytab=None,
-            dir_grpacct1_name=None,dir_grpacct1_sid=None,
-            dir_grpacct1_priv=None,dir_grpacct2_name=None,
-            dir_grpacct2_sid=None,dir_grpacct2_priv=None,
-            dir_grpacct3_name=None,dir_grpacct3_sid=None,
-            dir_grpacct3_priv=None,dir_grpacct4_name=None,
-            dir_grpacct4_sid=None,dir_grpacct4_priv=None,
-            dir_grpacct5_name=None,dir_grpacct5_sid=None,
-            dir_grpacct5_priv=None,dir_grpacct6_name=None,
-            dir_grpacct6_sid=None,dir_grpacct6_priv=None):
+                       dir_local_user_acct=None, dir_server_address=None,
+                       dir_server_port=None, dir_object_dn=None, dir_object_password=None,
+                       dir_user_context_1=None, dir_user_context_2=None,
+                       dir_user_context_3=None, dir_user_context_4=None,
+                       dir_user_context_5=None, dir_user_context_6=None,
+                       dir_user_context_7=None, dir_user_context_8=None,
+                       dir_user_context_9=None, dir_user_context_10=None,
+                       dir_user_context_11=None, dir_user_context_12=None,
+                       dir_user_context_13=None, dir_user_context_14=None,
+                       dir_user_context_15=None, dir_enable_grp_acct=None,
+                       dir_kerberos_enabled=None, dir_kerberos_realm=None,
+                       dir_kerberos_kdc_address=None, dir_kerberos_kdc_port=None,
+                       dir_kerberos_keytab=None,
+                       dir_generic_ldap_enabled=None,
+                       dir_grpacct1_name=None, dir_grpacct1_sid=None,
+                       dir_grpacct1_priv=None, dir_grpacct2_name=None,
+                       dir_grpacct2_sid=None, dir_grpacct2_priv=None,
+                       dir_grpacct3_name=None, dir_grpacct3_sid=None,
+                       dir_grpacct3_priv=None, dir_grpacct4_name=None,
+                       dir_grpacct4_sid=None, dir_grpacct4_priv=None,
+                       dir_grpacct5_name=None, dir_grpacct5_sid=None,
+                       dir_grpacct5_priv=None, dir_grpacct6_name=None,
+                       dir_grpacct6_sid=None, dir_grpacct6_priv=None):
         """Modify iLO directory configuration, only values that are specified
              will be changed."""
         vars = dict(locals())
@@ -1574,16 +1734,16 @@ class Ilo(object):
         # functions use names, and the iLO ssh interface shows different names.
         # Support them all.
         privmap = {
-            'login':         1,
-            'rc':            2,
-            'remote_cons':   2,
-            'vm':            3,
+            'login': 1,
+            'rc': 2,
+            'remote_cons': 2,
+            'vm': 3,
             'virtual_media': 3,
-            'power':         4,
-            'reset_server':  4,
-            'config':        5,
-            'config_ilo':    5,
-            'admin':         6,
+            'power': 4,
+            'reset_server': 4,
+            'config': 5,
+            'config_ilo': 5,
+            'admin': 6,
         }
 
         # create special case for element with text inside
@@ -1599,25 +1759,24 @@ class Ilo(object):
             if key.endswith('_priv'):
                 if isinstance(val, basestring):
                     val = val.replace('oemhp_', '').replace('_priv', '').split(',')
-                val = ','.join([str(privmap.get(x,x)) for x in val])
+                val = ','.join([str(privmap.get(x, x)) for x in val])
             else:
                 val = str({True: 'Yes', False: 'No'}.get(val, val))
             elements.append(etree.Element(key.upper(), VALUE=val))
 
         if dir_kerberos_keytab:
             elements.append(keytab_el)
-        return self._control_tag('DIR_INFO','MOD_DIR_CONFIG',elements=elements)
-
+        return self._control_tag('DIR_INFO', 'MOD_DIR_CONFIG', elements=elements)
 
     def mod_snmp_im_settings(self, snmp_access=None, web_agent_ip_address=None,
-            snmp_address_1=None, snmp_address_1_rocommunity=None, snmp_address_1_trapcommunity=None,
-            snmp_address_2=None, snmp_address_2_rocommunity=None, snmp_address_2_trapcommunity=None,
-            snmp_address_3=None, snmp_address_3_rocommunity=None, snmp_address_3_trapcommunity=None,
-            snmp_port=None, snmp_trap_port=None, snmp_v3_engine_id=None, snmp_passthrough_status=None,
-            trap_source_identifier=None, os_traps=None, rib_traps=None, cold_start_trap_broadcast=None,
-            snmp_v1_traps=None, cim_security_mask=None, snmp_sys_location=None, snmp_sys_contact=None,
-            agentless_management_enable=None, snmp_system_role=None, snmp_system_role_detail=None,
-            snmp_user_profile_1=None, snmp_user_profile_2=None, snmp_user_profile_3=None):
+                             snmp_address_1=None, snmp_address_1_rocommunity=None, snmp_address_1_trapcommunity=None,
+                             snmp_address_2=None, snmp_address_2_rocommunity=None, snmp_address_2_trapcommunity=None,
+                             snmp_address_3=None, snmp_address_3_rocommunity=None, snmp_address_3_trapcommunity=None,
+                             snmp_port=None, snmp_trap_port=None, snmp_v3_engine_id=None, snmp_passthrough_status=None,
+                             trap_source_identifier=None, os_traps=None, rib_traps=None, cold_start_trap_broadcast=None,
+                             snmp_v1_traps=None, cim_security_mask=None, snmp_sys_location=None, snmp_sys_contact=None,
+                             agentless_management_enable=None, snmp_system_role=None, snmp_system_role_detail=None,
+                             snmp_user_profile_1=None, snmp_user_profile_2=None, snmp_user_profile_3=None):
         """Configure the SNMP and Insight Manager integration settings. The
            trapcommunity settings must be dicts with keys value (the name of
            the community) and version (1 or 2c)"""
@@ -1637,18 +1796,20 @@ class Ilo(object):
                     etree.SubElement(elt, key.upper(), VALUE=str(val))
                 elements.append(elt)
         return self._control_tag('RIB_INFO', 'MOD_SNMP_IM_SETTINGS', elements=elements)
+
     mod_snmp_im_settings.requires_dict = ['snmp_user_profile_1', 'snmp_user_profile_2', 'snmp_user_profile_3',
-            'snmp_address_1_trapcommunity', 'snmp_address_2_trapcommunity', 'snmp_address_3_trapcommunity']
+                                          'snmp_address_1_trapcommunity', 'snmp_address_2_trapcommunity',
+                                          'snmp_address_3_trapcommunity']
 
     def mod_sso_settings(self, trust_mode=None, user_remote_cons_priv=None,
-            user_reset_server_priv=None, user_virtual_media_priv=None,
-            user_config_ilo_priv=None, user_admin_priv=None,
-            operator_login_priv=None, operator_remote_cons_priv=None,
-            operator_reset_server_priv=None, operator_virtual_media_priv=None,
-            operator_config_ilo_priv=None, operator_admin_priv=None,
-            administrator_login_priv=None, administrator_remote_cons_priv=None,
-            administrator_reset_server_priv=None, administrator_virtual_media_priv=None,
-            administrator_config_ilo_priv=None, administrator_admin_priv=None):
+                         user_reset_server_priv=None, user_virtual_media_priv=None,
+                         user_config_ilo_priv=None, user_admin_priv=None,
+                         operator_login_priv=None, operator_remote_cons_priv=None,
+                         operator_reset_server_priv=None, operator_virtual_media_priv=None,
+                         operator_config_ilo_priv=None, operator_admin_priv=None,
+                         administrator_login_priv=None, administrator_remote_cons_priv=None,
+                         administrator_reset_server_priv=None, administrator_virtual_media_priv=None,
+                         administrator_config_ilo_priv=None, administrator_admin_priv=None):
         vars = dict(locals())
         del vars['self']
         del vars['trust_mode']
@@ -1659,7 +1820,8 @@ class Ilo(object):
         elements += [etree.Element(x[0][0] + '_ROLE', attrib={x[0][1]: x[1]}) for x in vars]
         return self._control_tag('SSO_INFO', 'MOD_SSO_SETTINGS', elements=elements)
 
-    def mod_twofactor_settings(self, auth_twofactor_enable=None, cert_revocation_check=None, cert_owner_san=None, cert_owner_subject=None):
+    def mod_twofactor_settings(self, auth_twofactor_enable=None, cert_revocation_check=None, cert_owner_san=None,
+                               cert_owner_subject=None):
         """Modify the twofactor authenticatino settings"""
         elements = []
         if auth_twofactor_enable is not None:
@@ -1672,10 +1834,9 @@ class Ilo(object):
             elements.append(etree.Element('CERT_OWNER_SUBJECT'))
         return self._control_tag('RIB_INFO', 'MOD_TWOFACTOR_SETTINGS', elements=elements)
 
-
     def mod_user(self, user_login, user_name=None, password=None,
-            admin_priv=None, remote_cons_priv=None, reset_server_priv=None,
-            virtual_media_priv=None, config_ilo_priv=None):
+                 admin_priv=None, remote_cons_priv=None, reset_server_priv=None,
+                 virtual_media_priv=None, config_ilo_priv=None):
         """Set attributes for a user, only specified arguments will be changed.
            All arguments except user_name and password should be boolean"""
 
@@ -1700,7 +1861,7 @@ class Ilo(object):
         """Apply a deployment profile"""
         elements = [
             etree.Element('PROFILE_DESC_NAME', attrib={'VALUE': desc_name}),
-            etree.Element('PROFILE_OPTIONS', attrib={'VALUE': 'none'}), # Currently unused
+            etree.Element('PROFILE_OPTIONS', attrib={'VALUE': 'none'}),  # Currently unused
             etree.Element('PROFILE_ACTION', attrib={'VALUE': action}),
         ]
         return self._control_tag('RIB_INFO', 'PROFILE_APPLY', elements=elements)
@@ -1711,7 +1872,8 @@ class Ilo(object):
 
     def profile_delete(self, desc_name):
         """Delet the specified deployment profile"""
-        return self._control_tag('RIB_INFO', 'PROFILE_DELETE', elements=[etree.Element('PROFILE_DESC_NAME', attrib={'VALUE': desc_name})])
+        return self._control_tag('RIB_INFO', 'PROFILE_DELETE',
+                                 elements=[etree.Element('PROFILE_DESC_NAME', attrib={'VALUE': desc_name})])
 
     def profile_desc_download(self, desc_name, name, description, blob_namespace='perm', blob_name=None, url=None):
         """Make the iLO download a blob and create a deployment profile"""
@@ -1733,10 +1895,12 @@ class Ilo(object):
 
     def profile_list(self):
         """List all profile descriptors"""
+
         def process(data):
             if isinstance(data, dict):
                 return data.values()
             return data
+
         return self._info_tag('RIB_INFO', 'PROFILE_LIST', 'PROFILE_DESC_LIST', process=process)
 
     def hold_pwr_btn(self, toggle=None):
@@ -1781,7 +1945,7 @@ class Ilo(object):
         return self._control_tag('SERVER_INFO', 'SET_CRITICAL_TEMP_REMAIN_OFF', attrib={'VALUE': value})
 
     def set_ers_direct_connect(self, user_id, password, proxy_url=None,
-            proxy_port=None, proxy_username=None, proxy_password=None):
+                               proxy_port=None, proxy_username=None, proxy_password=None):
         """Register your iLO with HP Insigt Online using Direct Connect. Note
            that you must also call dc_registration_complete"""
         elements = [
@@ -1802,7 +1966,7 @@ class Ilo(object):
         return self._control_tag('RIB_INFO', 'SET_ERS_IRS_CONNECT', elements=elements)
 
     def set_ers_web_proxy(self, proxy_url, proxy_port, proxy_username=None,
-            proxy_password=None):
+                          proxy_password=None):
         """Register your iLO with HP Insigt Online using Direct Connect. Note
            that you must also call dc_registration_complete"""
         elements = []
@@ -1824,7 +1988,6 @@ class Ilo(object):
             etree.Element('MULTICAST_TTL', attrib={'VALUE': str(multicast_ttl)}),
         ]
         return self._control_tag('RIB_INFO', 'SET_FEDERATION_MULTICAST', elements=elements)
-
 
     def set_language(self, lang_id):
         """Set the default language. Only EN, JA and ZH are supported"""
@@ -1869,7 +2032,7 @@ class Ilo(object):
 
     def set_pers_mouse_keyboard_enabled(self, enabled):
         """Enable/disable persistent mouse and keyboard"""
-        enabled = {True: 'Yes', False: 'No'}.get(enabled,enabled)
+        enabled = {True: 'Yes', False: 'No'}.get(enabled, enabled)
         return self._control_tag('SERVER_INFO', 'SET_PERS_MOUSE_KEYBOARD_ENABLED', attrib={'VALUE': enabled})
 
     def set_pwreg(self, type, threshold=None, duration=None):
@@ -1969,9 +2132,7 @@ class Ilo(object):
         """Upload new RIB firmware, either specified by filename (.bin or
            .scexe) or version number. Use "latest" as version number to
            download and use the latest available firmware.
-
            API note:
-
            As this function may take a while, you can choose to receive
            progress messages by passing a callable in the progress parameter.
            This callable will be called many times to inform you about upload
